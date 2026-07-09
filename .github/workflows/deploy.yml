@@ -1,0 +1,51 @@
+name: Deploy Lambda
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Create Deployment ZIP
+        run: |
+          zip -r function.zip . \
+            -x ".git/*" \
+            -x ".github/*"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
+            --zip-file fileb://function.zip
+
+      - name: Notify Slack
+        if: success()
+        run: |
+          curl -X POST \
+          -H "Content-type: application/json" \
+          --data "{
+            \"text\": \"🚀 *Lambda Deployment Successful!* \n\n📦 Repository: ${{ github.repository }}\n🌿 Branch: ${{ github.ref_name }}\n👤 Author: ${{ github.actor }}\n💬 Commit: ${{ github.event.head_commit.message }}\n🔗 Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+          }" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}

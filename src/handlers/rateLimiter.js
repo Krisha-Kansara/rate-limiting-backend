@@ -6,6 +6,12 @@ import {
   LIMIT,
   WINDOW_SECONDS,
 } from "../config/constants.js";
+const corsHeaders = {
+  "Access-Control-Allow-Origin":
+    "https://rate-limiting-frontend.vercel.app",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "POST,OPTIONS",
+};
 
 export const handler = async (event) => {
   try {
@@ -16,6 +22,7 @@ export const handler = async (event) => {
     if (!apiKey) {
       return {
         statusCode: 400,
+        headers: corsHeaders,
         body: JSON.stringify({
           message: "apiKey is required",
         }),
@@ -35,7 +42,8 @@ export const handler = async (event) => {
       });
 
       return {
-        statusCode: 200,  
+        statusCode: 200,
+        headers: corsHeaders,  
         body: JSON.stringify({
           allowed: true,
           remaining: LIMIT - 1,
@@ -56,6 +64,7 @@ export const handler = async (event) => {
 
       return {
         statusCode: 200,
+        headers: corsHeaders,
         body: JSON.stringify({
           allowed: true,
           remaining: LIMIT - 1,
@@ -67,9 +76,10 @@ export const handler = async (event) => {
     if (record.requestCount >= LIMIT) {
       return {
         statusCode: 429,
+        headers: corsHeaders,
         body: JSON.stringify({
           allowed: false,
-          message: "Rate limit exceeded",
+          message: "Rate limit exceeded!",
         }),
       };
     }
@@ -84,6 +94,7 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers: corsHeaders,
       body: JSON.stringify({
         allowed: true,
         remaining:
@@ -96,6 +107,7 @@ export const handler = async (event) => {
 
     return {
       statusCode: 500,
+      headers: corsHeaders,
       body: JSON.stringify({
         message: "Internal server error",
       }),
